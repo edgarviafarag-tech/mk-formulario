@@ -123,7 +123,7 @@
             <div data-val="Matificante" class="chip">Matificante</div>
           </div>
 
-          <!-- NUEVO: Tono de base TimeWise 3D -->
+          <!-- Tono de base TimeWise 3D -->
           <label style="margin-top:10px">¿Qué tono de base TimeWise 3D usas?</label>
           <input id="baseTone3D" placeholder="Ej: Beige W 110, Ivory C 120, etc.">
         </div>
@@ -154,7 +154,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // TODO: Pega aquí tu config de Firebase Web
+    // ⚠️ Pega tu config real de Firebase Web:
+    // Firebase Console → Configuración del proyecto → Tus apps → Web
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_AUTH_DOMAIN",
@@ -184,7 +185,7 @@
     const getSkinType = setupChips("skinType");
     const getLineRec  = setupChips("lineRecommended");
 
-    // ------- Construir filas dinámicas de productos -------
+    // ------- Fila dinámica de productos -------
     const prods = document.getElementById("prods");
     const btnAddProd = document.getElementById("btnAddProd");
     function addProdRow(desc="", price="") {
@@ -199,10 +200,9 @@
       prods.appendChild(row);
     }
     btnAddProd.addEventListener("click", () => addProdRow());
-    // inicia con 1 fila
-    addProdRow();
+    addProdRow(); // inicia con 1
 
-    // ------- Construir 10 casillas de amig@s (nombre + teléfono) -------
+    // ------- 10 casillas amig@s (nombre + teléfono) -------
     const friendsTable = document.getElementById("friendsTable");
     for (let i = 1; i <= 10; i++) {
       const r = document.createElement("div");
@@ -221,9 +221,19 @@
     const f = document.getElementById("f");
     const msg = document.getElementById("msg");
 
+    function configCompleta(cfg) {
+      const req = ["apiKey","authDomain","projectId","appId"];
+      return req.every(k => (cfg?.[k] || "").startsWith("TU_") === false);
+    }
+
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.textContent = "";
+
+      if (!configCompleta(firebaseConfig)) {
+        msg.innerHTML = '<span class="err">Falta configurar Firebase en este formulario. Abre el archivo y pega tu <b>firebaseConfig</b> real.</span>';
+        return;
+      }
 
       // recolectar productos recomendados
       const recommendedProducts = Array.from(document.querySelectorAll(".prod-row")).map(r => {
@@ -231,9 +241,9 @@
           description: r.querySelector(".prod-desc").value.trim(),
           price: r.querySelector(".prod-price").value ? parseFloat(r.querySelector(".prod-price").value) : null
         };
-      }).filter(p => p.description); // al menos descripción
+      }).filter(p => p.description);
 
-      // recolectar amigos (como "Nombre - Teléfono" por línea, para tu app actual)
+      // recolectar amigos en formato compatible con la app (líneas)
       const friendLines = [];
       const names = document.querySelectorAll(".friend-name");
       const phones = document.querySelectorAll(".friend-phone");
@@ -258,30 +268,18 @@
         ageRange: getAgeRange() || null,
         skinType: getSkinType() || null,
         lineRecommended: getLineRec() || null,
-
-        // NUEVO: tono de base 3D
         baseTone3D: document.getElementById("baseTone3D").value.trim() || "",
-
-        // estos campos tu app los tiene pero aquí ya no se editan
         mattifier: "",
         idealCombination: "",
-
-        // preferencias derivadas de la línea
         prefersTimeWise: getLineRec()==="TimeWise",
         prefersRepair:  getLineRec()==="Repair",
-
-        // amig@s en formato compatible con tu app (texto con saltos de línea)
         friendsList: friendLines.join("\n") || null,
-
-        // productos recomendados (nuevo arreglo)
         recommendedProducts: recommendedProducts.length ? recommendedProducts : null,
-
-        // otros
         birthDay:   parseInt(document.getElementById("bDay").value)   || null,
         birthMonth: parseInt(document.getElementById("bMonth").value) || null,
         birthYear:  parseInt(document.getElementById("bYear").value)  || null,
-        otherProducts: null, // ya no se usa; queda null
-        wishMaryKay: "",     // si luego quieres lo añadimos a la web también
+        otherProducts: null,
+        wishMaryKay: "",
         createdAt: Date.now()
       };
 
@@ -295,25 +293,16 @@
       }
 
       try {
-        // Guardar en Firestore (colección igual que en la app)
         await addDoc(collection(db, "client_forms"), data);
         msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app...</span>';
-
-        // Redirige a la app (sección Documentos)
-        setTimeout(() => {
-          window.location.href = 'appfactura://forms';
-        }, 600);
-
+        setTimeout(() => { window.location.href = 'appfactura://forms'; }, 600);
         f.reset();
         document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
-        // limpiar filas productos excepto una
-        prods.innerHTML = '';
-        addProdRow();
-        // limpiar casillas amigos
+        prods.innerHTML = ''; addProdRow();
         document.querySelectorAll(".friend-name,.friend-phone").forEach(i=>i.value="");
       } catch (err) {
         console.error(err);
-        msg.innerHTML = '<span class="err">Error al enviar. Intenta de nuevo.</span>';
+        msg.innerHTML = '<span class="err">Error al enviar: ' + (err?.message || err) + '</span>';
       }
     });
   </script>
