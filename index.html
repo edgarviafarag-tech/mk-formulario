@@ -19,6 +19,7 @@
     .hint{font-size:12px;color:#666}
     .ok{color:#0a7e07;font-weight:600}
     .err{color:#b00020;font-weight:600}
+    .warn{color:#b26a00;font-weight:600}
     .btn{background:#5C46A2;color:#fff;border:0;cursor:pointer;font-weight:700}
     .btn:hover{opacity:.92}
     .mini{padding:8px 10px;border-radius:10px;font-size:14px}
@@ -28,11 +29,16 @@
     .table{display:grid;gap:8px}
     .rowline{display:grid;grid-template-columns:1fr 160px 42px;gap:8px;align-items:center}
     .del{border:1px solid #ccc;background:#fafafa;cursor:pointer;border-radius:10px}
+    .status{background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Perfil de Cliente</h1>
+
+    <!-- Banner de estado -->
+    <div id="status" class="status">Cargando…</div>
+
     <div class="card">
       <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
 
@@ -154,30 +160,37 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ← TU CONFIG REAL PEGADA
+    // ← TU CONFIG REAL (ajusto storageBucket)
     const firebaseConfig = {
       apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
       authDomain: "formulario-mk.firebaseapp.com",
       projectId: "formulario-mk",
-      storageBucket: "formulario-mk.firebasestorage.app",
+      storageBucket: "formulario-mk.appspot.com",
       messagingSenderId: "703672026606",
       appId: "1:703672026606:web:0312b7f2bda8a6a74f3aff",
       measurementId: "G-8ZEQPCRN8Q"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const statusEl = document.getElementById("status");
 
     // ====== LOG + CAPTURA GLOBAL DE ERRORES ======
+    function setStatus(html){ statusEl.innerHTML = html; }
     console.log("Formulario MK: script cargado");
+    setStatus('<span class="ok">Script OK</span> — cargado correctamente.');
+
     window.addEventListener("error", (e) => {
       const el = document.getElementById("msg");
       if (el) el.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
+      setStatus('<span class="err">Error JS global: ' + (e?.message || e) + '</span>');
     });
     window.addEventListener("unhandledrejection", (e) => {
       const el = document.getElementById("msg");
       if (el) el.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
+      setStatus('<span class="err">Error promesa global: ' + (e?.reason?.message || e?.reason || e) + '</span>');
     });
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     // ------- Helpers chips -------
     function setupChips(id) {
@@ -228,11 +241,15 @@
     // vendor desde el QR
     const params = new URLSearchParams(location.search);
     const vendorMsg = params.get("vendor_msg") || "";
+    if (!vendorMsg) {
+      setStatus('<span class="warn">Advertencia:</span> falta <b>vendor_msg</b> en la URL. Ejemplo: <code>?vendor_msg=EDGAR</code>');
+    } else {
+      setStatus('<span class="ok">Script OK</span> — vendor_msg = <b>'+vendorMsg+'</b>');
+    }
 
     const f = document.getElementById("f");
     const msg = document.getElementById("msg");
 
-    // Verificación simple de config (ya debería estar OK)
     function configCompleta(cfg) {
       const req = ["apiKey","authDomain","projectId","appId"];
       return req.every(k => Boolean(cfg?.[k]));
@@ -243,7 +260,11 @@
       msg.textContent = "";
 
       if (!configCompleta(firebaseConfig)) {
-        msg.innerHTML = '<span class="err">Falta configurar Firebase en este formulario. Abre el archivo y pega tu <b>firebaseConfig</b> real.</span>';
+        msg.innerHTML = '<span class="err">Falta configurar Firebase en este formulario.</span>';
+        return;
+      }
+      if (!vendorMsg) {
+        msg.innerHTML = '<span class="err">Falta el código de vendedor en el enlace (<b>vendor_msg</b>).</span>';
         return;
       }
 
@@ -299,22 +320,26 @@
         msg.innerHTML = '<span class="err">El nombre es obligatorio.</span>';
         return;
       }
-      if (!data.vendorVerificationMessage) {
-        msg.innerHTML = '<span class="err">Falta el código de vendedor en el enlace (vendor_msg).</span>';
-        return;
-      }
+
+      // Timeout de seguridad (10s)
+      let timeoutId = setTimeout(()=>{
+        msg.innerHTML = '<span class="warn">Tardando en enviar… revisa la consola (F12 → Console) por errores de Firestore/Reglas.</span>';
+      }, 10000);
 
       try {
         await addDoc(collection(db, "client_forms"), data);
-        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app...</span>';
+        clearTimeout(timeoutId);
+        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app…</span>';
         setTimeout(() => { window.location.href = 'appfactura://forms'; }, 600);
         f.reset();
         document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
         prods.innerHTML = ''; addProdRow();
         document.querySelectorAll(".friend-name,.friend-phone").forEach(i=>i.value="");
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error(err);
         msg.innerHTML = '<span class="err">Error al enviar: ' + (err?.message || err) + '</span>';
+        setStatus('<span class="err">Error Firestore: ' + (err?.message || err) + '</span>');
       }
     });
   </script>
