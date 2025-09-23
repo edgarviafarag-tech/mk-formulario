@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Perfil de Cliente</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#fff;}
+    .wrap{max-width:860px;margin:0 auto;padding:16px}
+    h1{color:#5C46A2;margin:0 0 8px}
+    .card{background:#fff;border:1px solid #eee;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);padding:16px;margin:12px 0}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1 1 260px}
+    label{display:block;font-weight:600;margin:8px 0 4px}
+    input,select,button,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #ddd;font-size:15px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{padding:10px 14px;border-radius:999px;border:1px solid #bbb;background:#fff;cursor:pointer}
+    .chip.active{background:#5C46A2;color:#fff;border-color:#5C46A2}
+    .hint{font-size:12px;color:#666}
+    .ok{color:#0a7e07;font-weight:600}
+    .err{color:#b00020;font-weight:600}
+    .btn{background:#5C46A2;color:#fff;border:0;cursor:pointer;font-weight:700}
+    .btn:hover{opacity:.92}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Perfil de Cliente</h1>
+    <div class="card">
+      <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
+      <form id="f">
+        <div class="row">
+          <div class="col">
+            <label>Nombre</label>
+            <input id="clientName" required>
+          </div>
+          <div class="col">
+            <label>Apellidos</label>
+            <input id="lastName">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label>Correo</label>
+            <input id="email" type="email">
+          </div>
+          <div class="col">
+            <label>Celular</label>
+            <input id="phone">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label>Dirección</label>
+            <input id="address">
+          </div>
+          <div class="col">
+            <label>Ciudad</label>
+            <input id="city">
+          </div>
+          <div class="col">
+            <label>Barrio</label>
+            <input id="neighborhood">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label>¿Cómo apareces en redes?</label>
+            <input id="social">
+          </div>
+          <div class="col">
+            <label>Invitado por</label>
+            <input id="invitedBy">
+          </div>
+          <div class="col">
+            <label>Consultora</label>
+            <input id="consultantName">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label>Fecha de nacimiento</label>
+            <div class="row">
+              <div class="col"><input id="bDay" placeholder="Día"></div>
+              <div class="col"><input id="bMonth" placeholder="Mes"></div>
+              <div class="col"><input id="bYear" placeholder="Año"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <label>Rango de edad</label>
+          <div class="chips" id="ageRange">
+            <div data-val="13-24" class="chip">13 a 24</div>
+            <div data-val="25-49" class="chip">25 a 49</div>
+            <div data-val="50+" class="chip">50 años o más</div>
+          </div>
+
+          <label style="margin-top:10px">Tipo de piel</label>
+          <div class="chips" id="skinType">
+            <div data-val="Normal/Seca" class="chip">Normal/Seca</div>
+            <div data-val="Combinada/Grasa" class="chip">Combinada/Grasa</div>
+          </div>
+
+          <label style="margin-top:10px">Línea recomendada</label>
+          <div class="chips" id="lineRecommended">
+            <div data-val="TimeWise" class="chip">TimeWise</div>
+            <div data-val="Repair" class="chip">Repair</div>
+            <div data-val="Matificante" class="chip">Matificante</div>
+          </div>
+
+          <label style="margin-top:10px">¿Qué otros productos te gustaría usar?</label>
+          <textarea id="otherProducts" rows="3"></textarea>
+        </div>
+
+        <div class="card">
+          <label>Amigas que desean probar (opcional)</label>
+          <textarea id="friends" rows="4" placeholder="Una por línea"></textarea>
+        </div>
+
+        <button class="btn" style="margin-top:8px">Enviar</button>
+        <div id="msg" style="margin-top:10px"></div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    // --- Firebase (CDN v10+) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // TODO: TU CONFIG de Firebase Web (desde la consola Firebase → Configuración del proyecto → tus apps web)
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Helpers UI de "chips" (selección única)
+    function setupChips(id) {
+      const cont = document.getElementById(id);
+      let value = "";
+      cont.addEventListener("click", (e) => {
+        const btn = e.target.closest(".chip");
+        if (!btn) return;
+        cont.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        value = btn.dataset.val;
+      });
+      return () => value;
+    }
+
+    const getAgeRange = setupChips("ageRange");
+    const getSkinType = setupChips("skinType");
+    const getLineRec = setupChips("lineRecommended");
+
+    // Tomamos vendor_msg del enlace (QR)
+    const params = new URLSearchParams(location.search);
+    const vendorMsg = params.get("vendor_msg") || "";
+
+    const f = document.getElementById("f");
+    const msg = document.getElementById("msg");
+
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const data = {
+        vendorVerificationMessage: vendorMsg,
+        clientName: document.getElementById("clientName").value.trim(),
+        lastName: document.getElementById("lastName").value.trim() || null,
+        consultantName: document.getElementById("consultantName").value.trim() || null,
+        invitedBy: document.getElementById("invitedBy").value.trim() || null,
+        email: document.getElementById("email").value.trim() || null,
+        phone: document.getElementById("phone").value.trim() || null,
+        address: document.getElementById("address").value.trim() || null,
+        city: document.getElementById("city").value.trim() || null,
+        neighborhood: document.getElementById("neighborhood").value.trim() || null,
+        socialHandle: document.getElementById("social").value.trim() || null,
+        ageRange: getAgeRange() || null,
+        skinType: getSkinType() || null,
+        lineRecommended: getLineRec() || null,
+        mattifier: "",                  // dejamos vacío como en la app
+        idealCombination: "",           // dejamos vacío
+        baseTone3D: "",
+        wishMaryKay: "",                // puedes agregar sección si quieres
+        otherProducts: document.getElementById("otherProducts").value.trim() || null,
+        prefersTimeWise: getLineRec()==="TimeWise",
+        prefersRepair: getLineRec()==="Repair",
+        birthDay: parseInt(document.getElementById("bDay").value) || null,
+        birthMonth: parseInt(document.getElementById("bMonth").value) || null,
+        birthYear: parseInt(document.getElementById("bYear").value) || null,
+        friendsList: document.getElementById("friends").value.trim() || null,
+        createdAt: Date.now()
+      };
+
+      if (!data.clientName) {
+        msg.innerHTML = '<span class="err">El nombre es obligatorio.</span>';
+        return;
+      }
+      if (!data.vendorVerificationMessage) {
+        msg.innerHTML = '<span class="err">Falta el código de vendedor en el enlace (vendor_msg).</span>';
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "client_forms"), data);
+        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente.</span>';
+        f.reset();
+        // limpiar selección chips visual
+        document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
+      } catch (err) {
+        console.error(err);
+        msg.innerHTML = '<span class="err">Error al enviar. Intenta de nuevo.</span>';
+      }
+    });
+  </script>
+</body>
+</html>
