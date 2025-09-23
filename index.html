@@ -150,19 +150,19 @@
   </div>
 
   <script type="module">
-    // --- Firebase (CDN v10+) ---
+    // Firebase (CDN v10+)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ⚠️ Pega tu config real de Firebase Web:
-    // Firebase Console → Configuración del proyecto → Tus apps → Web
+    // ← TU CONFIG REAL PEGADA
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_AUTH_DOMAIN",
-      projectId: "TU_PROJECT_ID",
-      storageBucket: "TU_STORAGE_BUCKET",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
+      apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
+      authDomain: "formulario-mk.firebaseapp.com",
+      projectId: "formulario-mk",
+      storageBucket: "formulario-mk.firebasestorage.app",
+      messagingSenderId: "703672026606",
+      appId: "1:703672026606:web:0312b7f2bda8a6a74f3aff",
+      measurementId: "G-8ZEQPCRN8Q"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -221,9 +221,10 @@
     const f = document.getElementById("f");
     const msg = document.getElementById("msg");
 
+    // Verificación simple de config (ya no debería dispararse)
     function configCompleta(cfg) {
       const req = ["apiKey","authDomain","projectId","appId"];
-      return req.every(k => (cfg?.[k] || "").startsWith("TU_") === false);
+      return req.every(k => Boolean(cfg?.[k]));
     }
 
     f.addEventListener("submit", async (e) => {
