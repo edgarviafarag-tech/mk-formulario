@@ -143,7 +143,7 @@
           <div id="friendsTable" class="table" style="margin-top:8px"></div>
         </div>
 
-        <button class="btn" style="margin-top:8px">Enviar</button>
+        <button type="submit" class="btn" style="margin-top:8px">Enviar</button>
         <div id="msg" style="margin-top:10px"></div>
       </form>
     </div>
@@ -167,6 +167,17 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // ====== LOG + CAPTURA GLOBAL DE ERRORES ======
+    console.log("Formulario MK: script cargado");
+    window.addEventListener("error", (e) => {
+      const el = document.getElementById("msg");
+      if (el) el.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      const el = document.getElementById("msg");
+      if (el) el.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
+    });
 
     // ------- Helpers chips -------
     function setupChips(id) {
@@ -221,7 +232,7 @@
     const f = document.getElementById("f");
     const msg = document.getElementById("msg");
 
-    // Verificación simple de config (ya no debería dispararse)
+    // Verificación simple de config (ya debería estar OK)
     function configCompleta(cfg) {
       const req = ["apiKey","authDomain","projectId","appId"];
       return req.every(k => Boolean(cfg?.[k]));
