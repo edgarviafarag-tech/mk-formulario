@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Perfil de Cliente</title>
+  <title>Perfil de Cliente MARY KAY</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#fff;}
-    .wrap{max-width:860px;margin:0 auto;padding:16px}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
     h1{color:#5C46A2;margin:0 0 8px}
     .card{background:#fff;border:1px solid #eee;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);padding:16px;margin:12px 0}
     .row{display:flex;gap:12px;flex-wrap:wrap}
@@ -21,6 +21,13 @@
     .err{color:#b00020;font-weight:600}
     .btn{background:#5C46A2;color:#fff;border:0;cursor:pointer;font-weight:700}
     .btn:hover{opacity:.92}
+    .mini{padding:8px 10px;border-radius:10px;font-size:14px}
+    .grid-two{display:grid;grid-template-columns:1fr 160px;gap:10px}
+    .grid-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .muted{color:#555;font-size:13px;margin-top:4px}
+    .table{display:grid;gap:8px}
+    .rowline{display:grid;grid-template-columns:1fr 160px 42px;gap:8px;align-items:center}
+    .del{border:1px solid #ccc;background:#fafafa;cursor:pointer;border-radius:10px}
   </style>
 </head>
 <body>
@@ -28,7 +35,9 @@
     <h1>Perfil de Cliente</h1>
     <div class="card">
       <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
+
       <form id="f">
+        <!-- ===== Datos Personales ===== -->
         <div class="row">
           <div class="col">
             <label>Nombre</label>
@@ -84,14 +93,15 @@
         <div class="row">
           <div class="col">
             <label>Fecha de nacimiento</label>
-            <div class="row">
-              <div class="col"><input id="bDay" placeholder="Día"></div>
-              <div class="col"><input id="bMonth" placeholder="Mes"></div>
-              <div class="col"><input id="bYear" placeholder="Año"></div>
+            <div class="grid-three">
+              <input id="bDay" placeholder="Día">
+              <input id="bMonth" placeholder="Mes">
+              <input id="bYear" placeholder="Año">
             </div>
           </div>
         </div>
 
+        <!-- ===== Preferencias / Piel ===== -->
         <div class="card">
           <label>Rango de edad</label>
           <div class="chips" id="ageRange">
@@ -113,13 +123,24 @@
             <div data-val="Matificante" class="chip">Matificante</div>
           </div>
 
-          <label style="margin-top:10px">¿Qué otros productos te gustaría usar?</label>
-          <textarea id="otherProducts" rows="3"></textarea>
+          <!-- NUEVO: Tono de base TimeWise 3D -->
+          <label style="margin-top:10px">¿Qué tono de base TimeWise 3D usas?</label>
+          <input id="baseTone3D" placeholder="Ej: Beige W 110, Ivory C 120, etc.">
         </div>
 
+        <!-- ===== Productos recomendados por el/la Consultor@ ===== -->
         <div class="card">
-          <label>Amigas que desean probar (opcional)</label>
-          <textarea id="friends" rows="4" placeholder="Una por línea"></textarea>
+          <label>Productos recomendados por tu Consultor@:</label>
+          <div class="muted">Agrega ítems con descripción y precio. Puedes añadir los que necesites.</div>
+          <div id="prods" class="table" style="margin-top:8px"></div>
+          <button type="button" id="btnAddProd" class="mini btn" style="margin-top:8px">Añadir producto</button>
+        </div>
+
+        <!-- ===== Amig@s ===== -->
+        <div class="card">
+          <label>Escribe 10 amig@s que deseas obsequiarle este maravilloso espacio (Sesión de Belleza)</label>
+          <div class="muted">Nombre y teléfono por casilla.</div>
+          <div id="friendsTable" class="table" style="margin-top:8px"></div>
         </div>
 
         <button class="btn" style="margin-top:8px">Enviar</button>
@@ -131,9 +152,9 @@
   <script type="module">
     // --- Firebase (CDN v10+) ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // TODO: TU CONFIG de Firebase Web (desde la consola Firebase → Configuración del proyecto → tus apps web)
+    // TODO: Pega aquí tu config de Firebase Web
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_AUTH_DOMAIN",
@@ -146,7 +167,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Helpers UI de "chips" (selección única)
+    // ------- Helpers chips -------
     function setupChips(id) {
       const cont = document.getElementById(id);
       let value = "";
@@ -159,12 +180,41 @@
       });
       return () => value;
     }
-
     const getAgeRange = setupChips("ageRange");
     const getSkinType = setupChips("skinType");
-    const getLineRec = setupChips("lineRecommended");
+    const getLineRec  = setupChips("lineRecommended");
 
-    // Tomamos vendor_msg del enlace (QR)
+    // ------- Construir filas dinámicas de productos -------
+    const prods = document.getElementById("prods");
+    const btnAddProd = document.getElementById("btnAddProd");
+    function addProdRow(desc="", price="") {
+      const row = document.createElement("div");
+      row.className = "rowline prod-row";
+      row.innerHTML = `
+        <input class="prod-desc" placeholder="Descripción" value="${desc}">
+        <input class="prod-price" placeholder="Precio" type="number" step="0.01" value="${price}">
+        <button type="button" class="del" title="Eliminar">✕</button>
+      `;
+      row.querySelector(".del").addEventListener("click", () => row.remove());
+      prods.appendChild(row);
+    }
+    btnAddProd.addEventListener("click", () => addProdRow());
+    // inicia con 1 fila
+    addProdRow();
+
+    // ------- Construir 10 casillas de amig@s (nombre + teléfono) -------
+    const friendsTable = document.getElementById("friendsTable");
+    for (let i = 1; i <= 10; i++) {
+      const r = document.createElement("div");
+      r.className = "grid-two";
+      r.innerHTML = `
+        <input class="friend-name" placeholder="${i}. Nombre">
+        <input class="friend-phone" placeholder="Teléfono">
+      `;
+      friendsTable.appendChild(r);
+    }
+
+    // vendor desde el QR
     const params = new URLSearchParams(location.search);
     const vendorMsg = params.get("vendor_msg") || "";
 
@@ -174,6 +224,24 @@
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.textContent = "";
+
+      // recolectar productos recomendados
+      const recommendedProducts = Array.from(document.querySelectorAll(".prod-row")).map(r => {
+        return {
+          description: r.querySelector(".prod-desc").value.trim(),
+          price: r.querySelector(".prod-price").value ? parseFloat(r.querySelector(".prod-price").value) : null
+        };
+      }).filter(p => p.description); // al menos descripción
+
+      // recolectar amigos (como "Nombre - Teléfono" por línea, para tu app actual)
+      const friendLines = [];
+      const names = document.querySelectorAll(".friend-name");
+      const phones = document.querySelectorAll(".friend-phone");
+      for (let i = 0; i < names.length; i++) {
+        const n = names[i].value.trim();
+        const t = phones[i].value.trim();
+        if (n || t) friendLines.push(`${n}${t ? " - " + t : ""}`);
+      }
 
       const data = {
         vendorVerificationMessage: vendorMsg,
@@ -190,17 +258,30 @@
         ageRange: getAgeRange() || null,
         skinType: getSkinType() || null,
         lineRecommended: getLineRec() || null,
-        mattifier: "",                  // dejamos vacío como en la app
-        idealCombination: "",           // dejamos vacío
-        baseTone3D: "",
-        wishMaryKay: "",                // puedes agregar sección si quieres
-        otherProducts: document.getElementById("otherProducts").value.trim() || null,
+
+        // NUEVO: tono de base 3D
+        baseTone3D: document.getElementById("baseTone3D").value.trim() || "",
+
+        // estos campos tu app los tiene pero aquí ya no se editan
+        mattifier: "",
+        idealCombination: "",
+
+        // preferencias derivadas de la línea
         prefersTimeWise: getLineRec()==="TimeWise",
-        prefersRepair: getLineRec()==="Repair",
-        birthDay: parseInt(document.getElementById("bDay").value) || null,
+        prefersRepair:  getLineRec()==="Repair",
+
+        // amig@s en formato compatible con tu app (texto con saltos de línea)
+        friendsList: friendLines.join("\n") || null,
+
+        // productos recomendados (nuevo arreglo)
+        recommendedProducts: recommendedProducts.length ? recommendedProducts : null,
+
+        // otros
+        birthDay:   parseInt(document.getElementById("bDay").value)   || null,
         birthMonth: parseInt(document.getElementById("bMonth").value) || null,
-        birthYear: parseInt(document.getElementById("bYear").value) || null,
-        friendsList: document.getElementById("friends").value.trim() || null,
+        birthYear:  parseInt(document.getElementById("bYear").value)  || null,
+        otherProducts: null, // ya no se usa; queda null
+        wishMaryKay: "",     // si luego quieres lo añadimos a la web también
         createdAt: Date.now()
       };
 
@@ -214,11 +295,22 @@
       }
 
       try {
+        // Guardar en Firestore (colección igual que en la app)
         await addDoc(collection(db, "client_forms"), data);
-        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente.</span>';
+        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app...</span>';
+
+        // Redirige a la app (sección Documentos)
+        setTimeout(() => {
+          window.location.href = 'appfactura://forms';
+        }, 600);
+
         f.reset();
-        // limpiar selección chips visual
         document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
+        // limpiar filas productos excepto una
+        prods.innerHTML = '';
+        addProdRow();
+        // limpiar casillas amigos
+        document.querySelectorAll(".friend-name,.friend-phone").forEach(i=>i.value="");
       } catch (err) {
         console.error(err);
         msg.innerHTML = '<span class="err">Error al enviar. Intenta de nuevo.</span>';
