@@ -29,15 +29,16 @@
     .table{display:grid;gap:8px}
     .rowline{display:grid;grid-template-columns:1fr 160px 42px;gap:8px;align-items:center}
     .del{border:1px solid #ccc;background:#fafafa;cursor:pointer;border-radius:10px}
-    .status{background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
+    /* 🔇 Por defecto el banner NO se muestra; se activa solo con errores/avisos */
+    .status{display:none;background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Perfil de Cliente</h1>
 
-    <!-- Banner de estado -->
-    <div id="status" class="status">Cargando…</div>
+    <!-- Banner de estado (se muestra solo si hay aviso/error) -->
+    <div id="status" class="status"></div>
 
     <div class="card">
       <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
@@ -160,7 +161,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ← TU CONFIG REAL (ajusto storageBucket)
+    // ← Config de tu proyecto
     const firebaseConfig = {
       apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
       authDomain: "formulario-mk.firebaseapp.com",
@@ -172,21 +173,19 @@
     };
 
     const statusEl = document.getElementById("status");
+    const showStatus = (html) => { statusEl.innerHTML = html; statusEl.style.display = ""; };
+    const hideStatus = () => { statusEl.innerHTML = ""; statusEl.style.display = "none"; };
 
-    // ====== LOG + CAPTURA GLOBAL DE ERRORES ======
-    function setStatus(html){ statusEl.innerHTML = html; }
-    console.log("Formulario MK: script cargado");
-    setStatus('<span class="ok">Script OK</span> — cargado correctamente.');
-
+    // ====== CAPTURA GLOBAL DE ERRORES (muestra banner) ======
     window.addEventListener("error", (e) => {
       const el = document.getElementById("msg");
       if (el) el.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
-      setStatus('<span class="err">Error JS global: ' + (e?.message || e) + '</span>');
+      showStatus('<span class="err">Error JS global: ' + (e?.message || e) + '</span>');
     });
     window.addEventListener("unhandledrejection", (e) => {
       const el = document.getElementById("msg");
       if (el) el.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
-      setStatus('<span class="err">Error promesa global: ' + (e?.reason?.message || e?.reason || e) + '</span>');
+      showStatus('<span class="err">Error promesa global: ' + (e?.reason?.message || e?.reason || e) + '</span>');
     });
 
     const app = initializeApp(firebaseConfig);
@@ -226,7 +225,7 @@
     btnAddProd.addEventListener("click", () => addProdRow());
     addProdRow(); // inicia con 1
 
-    // ------- 10 casillas amig@s (nombre + teléfono) -------
+    // ------- 10 casillas amig@s -------
     const friendsTable = document.getElementById("friendsTable");
     for (let i = 1; i <= 10; i++) {
       const r = document.createElement("div");
@@ -238,13 +237,14 @@
       friendsTable.appendChild(r);
     }
 
-    // vendor desde el QR
+    // ------- vendor desde el QR -------
     const params = new URLSearchParams(location.search);
     const vendorMsg = params.get("vendor_msg") || "";
     if (!vendorMsg) {
-      setStatus('<span class="warn">Advertencia:</span> falta <b>vendor_msg</b> en la URL. Ejemplo: <code>?vendor_msg=EDGAR</code>');
+      showStatus('<span class="warn">Advertencia:</span> falta <b>vendor_msg</b> en la URL. Ejemplo: <code>?vendor_msg=EDGAR</code>');
     } else {
-      setStatus('<span class="ok">Script OK</span> — vendor_msg = <b>'+vendorMsg+'</b>');
+      // En estado OK no mostramos banner
+      hideStatus();
     }
 
     const f = document.getElementById("f");
@@ -282,6 +282,7 @@
       const phones = document.querySelectorAll(".friend-phone");
       for (let i = 0; i < names.length; i++) {
         const n = names[i].value.trim();
+        the:
         const t = phones[i].value.trim();
         if (n || t) friendLines.push(`${n}${t ? " - " + t : ""}`);
       }
@@ -323,7 +324,7 @@
 
       // Timeout de seguridad (10s)
       let timeoutId = setTimeout(()=>{
-        msg.innerHTML = '<span class="warn">Tardando en enviar… revisa la consola (F12 → Console) por errores de Firestore/Reglas.</span>';
+        msg.innerHTML = '<span class="warn">Tardando en enviar… revisa la consola (F12 → Console) por errores de Firestore/Reglas).</span>';
       }, 10000);
 
       try {
@@ -339,7 +340,7 @@
         clearTimeout(timeoutId);
         console.error(err);
         msg.innerHTML = '<span class="err">Error al enviar: ' + (err?.message || err) + '</span>';
-        setStatus('<span class="err">Error Firestore: ' + (err?.message || err) + '</span>');
+        showStatus('<span class="err">Error Firestore: ' + (err?.message || err) + '</span>');
       }
     });
   </script>
