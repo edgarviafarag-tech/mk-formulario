@@ -5,40 +5,45 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Perfil de Cliente MARY KAY</title>
   <style>
+    :root{
+      --mk:#5C46A2;
+      --mk-600:#4f3c8e;
+      --border:#e9e9ef;
+    }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#fff;}
     .wrap{max-width:980px;margin:0 auto;padding:16px}
-    h1{color:#5C46A2;margin:0 0 8px}
-    .card{background:#fff;border:1px solid #eee;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);padding:16px;margin:12px 0}
+    h1{color:var(--mk);margin:0 0 8px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);padding:16px;margin:12px 0}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .col{flex:1 1 260px}
     label{display:block;font-weight:600;margin:8px 0 4px}
-    input,select,button,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #ddd;font-size:15px}
+    input,select,button,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;font-size:15px}
+    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--mk)}
     .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .chip{padding:10px 14px;border-radius:999px;border:1px solid #bbb;background:#fff;cursor:pointer}
-    .chip.active{background:#5C46A2;color:#fff;border-color:#5C46A2}
+    .chip{padding:10px 14px;border-radius:999px;border:1px solid #bbb;background:#fff;cursor:pointer;user-select:none}
+    .chip.active{background:var(--mk);color:#fff;border-color:var(--mk)}
     .hint{font-size:12px;color:#666}
-    .ok{color:#0a7e07;font-weight:600}
-    .err{color:#b00020;font-weight:600}
-    .warn{color:#b26a00;font-weight:600}
-    .btn{background:#5C46A2;color:#fff;border:0;cursor:pointer;font-weight:700}
-    .btn:hover{opacity:.92}
-    .mini{padding:8px 10px;border-radius:10px;font-size:14px}
+    .btn{background:var(--mk);color:#fff;border:0;cursor:pointer;font-weight:700}
+    .btn:hover{background:var(--mk-600)}
+    .mini{padding:10px 12px;border-radius:12px;font-size:14px}
     .grid-two{display:grid;grid-template-columns:1fr 160px;gap:10px}
     .grid-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
     .muted{color:#555;font-size:13px;margin-top:4px}
     .table{display:grid;gap:8px}
     .rowline{display:grid;grid-template-columns:1fr 160px 42px;gap:8px;align-items:center}
     .del{border:1px solid #ccc;background:#fafafa;cursor:pointer;border-radius:10px}
-    /* 🔇 Por defecto el banner NO se muestra; se activa solo con errores/avisos */
-    .status{display:none;background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
+    .status{position:sticky;top:8px;background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
+    .ok{color:#0a7e07;font-weight:600}
+    .err{color:#b00020;font-weight:600}
+    .warn{color:#b26a00;font-weight:600}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Perfil de Cliente</h1>
 
-    <!-- Banner de estado (se muestra solo si hay aviso/error) -->
-    <div id="status" class="status"></div>
+    <!-- Banner de estado (se oculta solo) -->
+    <div id="status" class="status">Cargando…</div>
 
     <div class="card">
       <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
@@ -157,41 +162,18 @@
   </div>
 
   <script type="module">
-    // Firebase (CDN v10+)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    // ← Config de tu proyecto
-    const firebaseConfig = {
-      apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
-      authDomain: "formulario-mk.firebaseapp.com",
-      projectId: "formulario-mk",
-      storageBucket: "formulario-mk.appspot.com",
-      messagingSenderId: "703672026606",
-      appId: "1:703672026606:web:0312b7f2bda8a6a74f3aff",
-      measurementId: "G-8ZEQPCRN8Q"
-    };
-
+    // ===== UI helpers y estado =====
     const statusEl = document.getElementById("status");
-    const showStatus = (html) => { statusEl.innerHTML = html; statusEl.style.display = ""; };
-    const hideStatus = () => { statusEl.innerHTML = ""; statusEl.style.display = "none"; };
+    const prods       = document.getElementById("prods");
+    const btnAddProd  = document.getElementById("btnAddProd");
+    const friendsTable= document.getElementById("friendsTable");
+    const f           = document.getElementById("f");
+    const msg         = document.getElementById("msg");
 
-    // ====== CAPTURA GLOBAL DE ERRORES (muestra banner) ======
-    window.addEventListener("error", (e) => {
-      const el = document.getElementById("msg");
-      if (el) el.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
-      showStatus('<span class="err">Error JS global: ' + (e?.message || e) + '</span>');
-    });
-    window.addEventListener("unhandledrejection", (e) => {
-      const el = document.getElementById("msg");
-      if (el) el.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
-      showStatus('<span class="err">Error promesa global: ' + (e?.reason?.message || e?.reason || e) + '</span>');
-    });
+    function setStatus(html){ statusEl.innerHTML = html; }
+    function hideStatusSoon(){ setTimeout(()=>statusEl.style.display='none', 1800); }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // ------- Helpers chips -------
+    // ------- Chips -------
     function setupChips(id) {
       const cont = document.getElementById(id);
       let value = "";
@@ -208,9 +190,7 @@
     const getSkinType = setupChips("skinType");
     const getLineRec  = setupChips("lineRecommended");
 
-    // ------- Fila dinámica de productos -------
-    const prods = document.getElementById("prods");
-    const btnAddProd = document.getElementById("btnAddProd");
+    // ------- Productos dinámicos -------
     function addProdRow(desc="", price="") {
       const row = document.createElement("div");
       row.className = "rowline prod-row";
@@ -222,53 +202,79 @@
       row.querySelector(".del").addEventListener("click", () => row.remove());
       prods.appendChild(row);
     }
-    btnAddProd.addEventListener("click", () => addProdRow());
-    addProdRow(); // inicia con 1
 
-    // ------- 10 casillas amig@s -------
-    const friendsTable = document.getElementById("friendsTable");
-    for (let i = 1; i <= 10; i++) {
-      const r = document.createElement("div");
-      r.className = "grid-two";
-      r.innerHTML = `
-        <input class="friend-name" placeholder="${i}. Nombre">
-        <input class="friend-phone" placeholder="Teléfono">
-      `;
-      friendsTable.appendChild(r);
+    // ------- 10 amig@s -------
+    function buildFriends() {
+      friendsTable.innerHTML = "";
+      for (let i = 1; i <= 10; i++) {
+        const r = document.createElement("div");
+        r.className = "grid-two";
+        r.innerHTML = `
+          <input class="friend-name" placeholder="${i}. Nombre">
+          <input class="friend-phone" placeholder="Teléfono">
+        `;
+        friendsTable.appendChild(r);
+      }
     }
 
-    // ------- vendor desde el QR -------
-    const params = new URLSearchParams(location.search);
+    // ====== Inicializar SIEMPRE la UI, aunque falle algo de la red ======
+    (function initUI(){
+      try{
+        setStatus('<span class="ok">Script OK</span> — interfaz lista.');
+        hideStatusSoon();
+        addProdRow();               // ← asegura que se vea al menos 1 fila
+        btnAddProd.addEventListener("click", () => addProdRow());
+        buildFriends();             // ← crea las 10 filas
+      }catch(err){
+        setStatus('<span class="err">Error UI: '+(err?.message||err)+'</span>');
+      }
+    })();
+
+    // ====== Firebase (CDN v10+) solo para enviar ======
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
+      authDomain: "formulario-mk.firebaseapp.com",
+      projectId: "formulario-mk",
+      storageBucket: "formulario-mk.appspot.com",
+      messagingSenderId: "703672026606",
+      appId: "1:703672026606:web:0312b7f2bda8a6a74f3aff",
+      measurementId: "G-8ZEQPCRN8Q"
+    };
+
+    // Captura global de errores para no romper la UI
+    window.addEventListener("error", (e) => {
+      msg.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      msg.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
+    });
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    // Vendor desde la URL
+    const params    = new URLSearchParams(location.search);
     const vendorMsg = params.get("vendor_msg") || "";
     if (!vendorMsg) {
-      showStatus('<span class="warn">Advertencia:</span> falta <b>vendor_msg</b> en la URL. Ejemplo: <code>?vendor_msg=EDGAR</code>');
-    } else {
-      // En estado OK no mostramos banner
-      hideStatus();
+      setStatus('<span class="warn">Falta <b>vendor_msg</b> en el enlace. Ej: ?vendor_msg=EDGAR</span>');
+      hideStatusSoon();
     }
 
-    const f = document.getElementById("f");
-    const msg = document.getElementById("msg");
-
-    function configCompleta(cfg) {
-      const req = ["apiKey","authDomain","projectId","appId"];
-      return req.every(k => Boolean(cfg?.[k]));
-    }
-
+    // ===== Enviar =====
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.textContent = "";
 
-      if (!configCompleta(firebaseConfig)) {
-        msg.innerHTML = '<span class="err">Falta configurar Firebase en este formulario.</span>';
-        return;
-      }
       if (!vendorMsg) {
         msg.innerHTML = '<span class="err">Falta el código de vendedor en el enlace (<b>vendor_msg</b>).</span>';
         return;
       }
 
-      // recolectar productos recomendados
+      // recolectar productos
       const recommendedProducts = Array.from(document.querySelectorAll(".prod-row")).map(r => {
         return {
           description: r.querySelector(".prod-desc").value.trim(),
@@ -276,13 +282,12 @@
         };
       }).filter(p => p.description);
 
-      // recolectar amigos en formato compatible con la app (líneas)
+      // recolectar amigos en formato de líneas
       const friendLines = [];
-      const names = document.querySelectorAll(".friend-name");
+      const names  = document.querySelectorAll(".friend-name");
       const phones = document.querySelectorAll(".friend-phone");
-      for (let i = 0; i < names.length; i++) {
+      for (let i=0;i<names.length;i++){
         const n = names[i].value.trim();
-        the:
         const t = phones[i].value.trim();
         if (n || t) friendLines.push(`${n}${t ? " - " + t : ""}`);
       }
@@ -322,9 +327,8 @@
         return;
       }
 
-      // Timeout de seguridad (10s)
       let timeoutId = setTimeout(()=>{
-        msg.innerHTML = '<span class="warn">Tardando en enviar… revisa la consola (F12 → Console) por errores de Firestore/Reglas).</span>';
+        msg.innerHTML = '<span class="warn">Tardando en enviar… (revisa la consola del navegador por errores)</span>';
       }, 10000);
 
       try {
@@ -332,15 +336,17 @@
         clearTimeout(timeoutId);
         msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app…</span>';
         setTimeout(() => { window.location.href = 'appfactura://forms'; }, 600);
+
+        // Reset limpio
         f.reset();
         document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
         prods.innerHTML = ''; addProdRow();
-        document.querySelectorAll(".friend-name,.friend-phone").forEach(i=>i.value="");
+        buildFriends();
+
       } catch (err) {
         clearTimeout(timeoutId);
         console.error(err);
         msg.innerHTML = '<span class="err">Error al enviar: ' + (err?.message || err) + '</span>';
-        showStatus('<span class="err">Error Firestore: ' + (err?.message || err) + '</span>');
       }
     });
   </script>
