@@ -256,9 +256,11 @@
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // Vendor desde la URL
-    const params    = new URLSearchParams(location.search);
-    const vendorMsg = params.get("vendor_msg") || "";
+    // Vendor desde la URL — NORMALIZADO
+    const params       = new URLSearchParams(location.search);
+    const vendorMsgRaw = params.get("vendor_msg") || "";
+    const vendorMsg    = vendorMsgRaw.trim().toUpperCase();
+
     if (!vendorMsg) {
       setStatus('<span class="warn">Falta <b>vendor_msg</b> en el enlace. Ej: ?vendor_msg=EDGAR</span>');
       hideStatusSoon();
@@ -293,7 +295,7 @@
       }
 
       const data = {
-        vendorVerificationMessage: vendorMsg,
+        vendorVerificationMessage: vendorMsg,  // ← GUARDAMOS NORMALIZADO
         clientName: document.getElementById("clientName").value.trim(),
         lastName: document.getElementById("lastName").value.trim() || null,
         consultantName: document.getElementById("consultantName").value.trim() || null,
