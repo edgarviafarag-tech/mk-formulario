@@ -36,11 +36,12 @@
     .ok{color:#0a7e07;font-weight:600}
     .err{color:#b00020;font-weight:600}
     .warn{color:#b26a00;font-weight:600}
+    .tiny{font-size:12px;color:#555;margin-left:6px}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Perfil de Cliente</h1>
+    <h1>Perfil de Cliente <span id="project" class="tiny"></span></h1>
 
     <!-- Banner de estado (se oculta solo) -->
     <div id="status" class="status">Cargando…</div>
@@ -163,14 +164,15 @@
 
   <script type="module">
     // ===== UI helpers y estado =====
-    const statusEl = document.getElementById("status");
-    const prods       = document.getElementById("prods");
-    const btnAddProd  = document.getElementById("btnAddProd");
-    const friendsTable= document.getElementById("friendsTable");
-    const f           = document.getElementById("f");
-    const msg         = document.getElementById("msg");
+    const statusEl     = document.getElementById("status");
+    const projectEl    = document.getElementById("project");
+    const prods        = document.getElementById("prods");
+    const btnAddProd   = document.getElementById("btnAddProd");
+    const friendsTable = document.getElementById("friendsTable");
+    const f            = document.getElementById("f");
+    const msg          = document.getElementById("msg");
 
-    function setStatus(html){ statusEl.innerHTML = html; }
+    function setStatus(html){ statusEl.innerHTML = html; statusEl.style.display='block'; }
     function hideStatusSoon(){ setTimeout(()=>statusEl.style.display='none', 1800); }
 
     // ------- Chips -------
@@ -230,11 +232,12 @@
       }
     })();
 
-    // ====== Firebase (CDN v10+) solo para enviar ======
+    // ====== Firebase (CDN v10+) solo para ENVIAR ======
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Config
+    // *** SI QUIERES QUE LA APP LEA ESTOS DOCUMENTOS, USA AQUÍ EL MISMO PROYECTO QUE LA APP ***
+    // Reemplaza este bloque por el config de tu Web App dentro del proyecto appfacturadrivesync-1d991.
     const firebaseConfig = {
       apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
       authDomain: "formulario-mk.firebaseapp.com",
@@ -255,6 +258,12 @@
 
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
+
+    // Mostrar a qué proyecto estamos conectados (debug visual)
+    try {
+      const pid = app.options?.projectId || "(desconocido)";
+      projectEl.textContent = `· proyecto: ${pid}`;
+    } catch {}
 
     // Vendor desde la URL — NORMALIZADO
     const params       = new URLSearchParams(location.search);
@@ -294,8 +303,12 @@
         if (n || t) friendLines.push(`${n}${t ? " - " + t : ""}`);
       }
 
+      const nowMs = Date.now();
+
+      // *** GUARDAMOS AMBOS CAMPOS DE VENDOR (compat con la app) ***
       const data = {
-        vendorVerificationMessage: vendorMsg,  // ← GUARDAMOS NORMALIZADO
+        vendorVerificationMessage: vendorMsg,   // nuevo (UPPER)
+        vendor_msg: vendorMsg,                  // compat (UPPER)
         clientName: document.getElementById("clientName").value.trim(),
         lastName: document.getElementById("lastName").value.trim() || null,
         consultantName: document.getElementById("consultantName").value.trim() || null,
@@ -321,7 +334,8 @@
         birthYear:  parseInt(document.getElementById("bYear").value)  || null,
         otherProducts: null,
         wishMaryKay: "",
-        createdAt: Date.now()
+        createdAt: nowMs,              // lo que ya consume tu app
+        createdAtTs: serverTimestamp() // extra: por si luego ordenas en Firestore
       };
 
       if (!data.clientName) {
