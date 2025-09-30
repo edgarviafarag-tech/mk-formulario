@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Perfil de Cliente MARY KAY</title>
   <style>
-    :root{
-      --mk:#5C46A2;
-      --mk-600:#4f3c8e;
-      --border:#e9e9ef;
-    }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#fff;}
+    :root{--mk:#5C46A2;--mk-600:#4f3c8e;--border:#e9e9ef}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#fff}
     .wrap{max-width:980px;margin:0 auto;padding:16px}
     h1{color:var(--mk);margin:0 0 8px}
     .card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);padding:16px;margin:12px 0}
@@ -33,74 +29,39 @@
     .rowline{display:grid;grid-template-columns:1fr 160px 42px;gap:8px;align-items:center}
     .del{border:1px solid #ccc;background:#fafafa;cursor:pointer;border-radius:10px}
     .status{position:sticky;top:8px;background:#f7f7ff;border:1px solid #e5e5ff;padding:10px 12px;border-radius:12px;margin:10px 0;font-size:14px}
-    .ok{color:#0a7e07;font-weight:600}
-    .err{color:#b00020;font-weight:600}
-    .warn{color:#b26a00;font-weight:600}
+    .ok{color:#0a7e07;font-weight:600}.err{color:#b00020;font-weight:600}.warn{color:#b26a00;font-weight:600}
     .tiny{font-size:12px;color:#555;margin-left:6px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Perfil de Cliente <span id="project" class="tiny"></span></h1>
-
-    <!-- Banner de estado (se oculta solo) -->
     <div id="status" class="status">Cargando…</div>
 
     <div class="card">
       <p class="hint">Este formulario se guarda con el código de vendedor del enlace (QR).</p>
 
       <form id="f">
-        <!-- ===== Datos Personales ===== -->
         <div class="row">
-          <div class="col">
-            <label>Nombre</label>
-            <input id="clientName" required>
-          </div>
-          <div class="col">
-            <label>Apellidos</label>
-            <input id="lastName">
-          </div>
+          <div class="col"><label>Nombre</label><input id="clientName" required></div>
+          <div class="col"><label>Apellidos</label><input id="lastName"></div>
         </div>
 
         <div class="row">
-          <div class="col">
-            <label>Correo</label>
-            <input id="email" type="email">
-          </div>
-          <div class="col">
-            <label>Celular</label>
-            <input id="phone">
-          </div>
+          <div class="col"><label>Correo</label><input id="email" type="email"></div>
+          <div class="col"><label>Celular</label><input id="phone"></div>
         </div>
 
         <div class="row">
-          <div class="col">
-            <label>Dirección</label>
-            <input id="address">
-          </div>
-          <div class="col">
-            <label>Ciudad</label>
-            <input id="city">
-          </div>
-          <div class="col">
-            <label>Barrio</label>
-            <input id="neighborhood">
-          </div>
+          <div class="col"><label>Dirección</label><input id="address"></div>
+          <div class="col"><label>Ciudad</label><input id="city"></div>
+          <div class="col"><label>Barrio</label><input id="neighborhood"></div>
         </div>
 
         <div class="row">
-          <div class="col">
-            <label>¿Cómo apareces en redes?</label>
-            <input id="social">
-          </div>
-          <div class="col">
-            <label>Invitado por</label>
-            <input id="invitedBy">
-          </div>
-          <div class="col">
-            <label>Consultora</label>
-            <input id="consultantName">
-          </div>
+          <div class="col"><label>¿Cómo apareces en redes?</label><input id="social"></div>
+          <div class="col"><label>Invitado por</label><input id="invitedBy"></div>
+          <div class="col"><label>Consultora</label><input id="consultantName"></div>
         </div>
 
         <div class="row">
@@ -114,7 +75,6 @@
           </div>
         </div>
 
-        <!-- ===== Preferencias / Piel ===== -->
         <div class="card">
           <label>Rango de edad</label>
           <div class="chips" id="ageRange">
@@ -136,12 +96,10 @@
             <div data-val="Matificante" class="chip">Matificante</div>
           </div>
 
-          <!-- Tono de base TimeWise 3D -->
           <label style="margin-top:10px">¿Qué tono de base TimeWise 3D usas?</label>
           <input id="baseTone3D" placeholder="Ej: Beige W 110, Ivory C 120, etc.">
         </div>
 
-        <!-- ===== Productos recomendados por el/la Consultor@ ===== -->
         <div class="card">
           <label>Productos recomendados por tu Consultor@:</label>
           <div class="muted">Agrega ítems con descripción y precio. Puedes añadir los que necesites.</div>
@@ -149,7 +107,6 @@
           <button type="button" id="btnAddProd" class="mini btn" style="margin-top:8px">Añadir producto</button>
         </div>
 
-        <!-- ===== Amig@s ===== -->
         <div class="card">
           <label>Escribe 10 amig@s que deseas obsequiarle este maravilloso espacio (Sesión de Belleza)</label>
           <div class="muted">Nombre y teléfono por casilla.</div>
@@ -163,152 +120,116 @@
   </div>
 
   <script type="module">
-    // ===== UI helpers y estado =====
-    const statusEl     = document.getElementById("status");
-    const projectEl    = document.getElementById("project");
-    const prods        = document.getElementById("prods");
-    const btnAddProd   = document.getElementById("btnAddProd");
-    const friendsTable = document.getElementById("friendsTable");
-    const f            = document.getElementById("f");
-    const msg          = document.getElementById("msg");
+    // ===== UI helpers =====
+    const statusEl=document.getElementById("status");
+    const projectEl=document.getElementById("project");
+    const prods=document.getElementById("prods");
+    const btnAddProd=document.getElementById("btnAddProd");
+    const friendsTable=document.getElementById("friendsTable");
+    const f=document.getElementById("f");
+    const msg=document.getElementById("msg");
 
-    function setStatus(html){ statusEl.innerHTML = html; statusEl.style.display='block'; }
-    function hideStatusSoon(){ setTimeout(()=>statusEl.style.display='none', 1800); }
+    function setStatus(h){statusEl.innerHTML=h;statusEl.style.display='block'}
+    function hideStatusSoon(){setTimeout(()=>statusEl.style.display='none',1800)}
 
-    // ------- Chips -------
-    function setupChips(id) {
-      const cont = document.getElementById(id);
-      let value = "";
-      cont.addEventListener("click", (e) => {
-        const btn = e.target.closest(".chip");
-        if (!btn) return;
-        cont.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
-        btn.classList.add("active");
-        value = btn.dataset.val;
+    function setupChips(id){
+      const cont=document.getElementById(id);let value="";
+      cont.addEventListener("click",(e)=>{
+        const btn=e.target.closest(".chip"); if(!btn) return;
+        cont.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+        btn.classList.add("active"); value=btn.dataset.val;
       });
-      return () => value;
+      return()=>value;
     }
-    const getAgeRange = setupChips("ageRange");
-    const getSkinType = setupChips("skinType");
-    const getLineRec  = setupChips("lineRecommended");
+    const getAgeRange=setupChips("ageRange");
+    const getSkinType=setupChips("skinType");
+    const getLineRec=setupChips("lineRecommended");
 
-    // ------- Productos dinámicos -------
-    function addProdRow(desc="", price="") {
-      const row = document.createElement("div");
-      row.className = "rowline prod-row";
-      row.innerHTML = `
+    function addProdRow(desc="",price=""){
+      const row=document.createElement("div");
+      row.className="rowline prod-row";
+      row.innerHTML=`
         <input class="prod-desc" placeholder="Descripción" value="${desc}">
         <input class="prod-price" placeholder="Precio" type="number" step="0.01" value="${price}">
-        <button type="button" class="del" title="Eliminar">✕</button>
-      `;
-      row.querySelector(".del").addEventListener("click", () => row.remove());
+        <button type="button" class="del" title="Eliminar">✕</button>`;
+      row.querySelector(".del").addEventListener("click",()=>row.remove());
       prods.appendChild(row);
     }
 
-    // ------- 10 amig@s -------
-    function buildFriends() {
-      friendsTable.innerHTML = "";
-      for (let i = 1; i <= 10; i++) {
-        const r = document.createElement("div");
-        r.className = "grid-two";
-        r.innerHTML = `
-          <input class="friend-name" placeholder="${i}. Nombre">
-          <input class="friend-phone" placeholder="Teléfono">
-        `;
+    function buildFriends(){
+      friendsTable.innerHTML="";
+      for(let i=1;i<=10;i++){
+        const r=document.createElement("div");
+        r.className="grid-two";
+        r.innerHTML=`<input class="friend-name" placeholder="${i}. Nombre">
+                     <input class="friend-phone" placeholder="Teléfono">`;
         friendsTable.appendChild(r);
       }
     }
 
-    // ====== Inicializar SIEMPRE la UI, aunque falle algo de la red ======
     (function initUI(){
-      try{
-        setStatus('<span class="ok">Script OK</span> — interfaz lista.');
-        hideStatusSoon();
-        addProdRow();               // ← asegura que se vea al menos 1 fila
-        btnAddProd.addEventListener("click", () => addProdRow());
-        buildFriends();             // ← crea las 10 filas
-      }catch(err){
-        setStatus('<span class="err">Error UI: '+(err?.message||err)+'</span>');
-      }
+      try{ setStatus('<span class="ok">Script OK</span> — interfaz lista.');
+           hideStatusSoon(); addProdRow(); btnAddProd.addEventListener("click",()=>addProdRow()); buildFriends();
+      }catch(err){ setStatus('<span class="err">Error UI: '+(err?.message||err)+'</span>'); }
     })();
 
-    // ====== Firebase (CDN v10+) solo para ENVIAR ======
+    // ===== Firebase (CDN v10) =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // *** SI QUIERES QUE LA APP LEA ESTOS DOCUMENTOS, USA AQUÍ EL MISMO PROYECTO QUE LA APP ***
-    // Reemplaza este bloque por el config de tu Web App dentro del proyecto appfacturadrivesync-1d991.
+    // CONFIG DEL PROYECTO: appfacturdrivesync-1d991  ✅
     const firebaseConfig = {
-      apiKey: "AIzaSyC79gBakaVzYxnzHZe6Dn4kfM9FTarWfdI",
-      authDomain: "formulario-mk.firebaseapp.com",
-      projectId: "formulario-mk",
-      storageBucket: "formulario-mk.appspot.com",
-      messagingSenderId: "703672026606",
-      appId: "1:703672026606:web:0312b7f2bda8a6a74f3aff",
-      measurementId: "G-8ZEQPCRN8Q"
+      apiKey: "AIzaSyAUQLJZfjCLfEaZwzmO6tkh5HAo-Zd3GrE",
+      authDomain: "appfacturadrivesync-1d991.firebaseapp.com",
+      projectId: "appfacturadrivesync-1d991",
+      storageBucket: "appfacturadrivesync-1d991.firebasestorage.app",
+      messagingSenderId: "596267600544",
+      appId: "1:596267600544:web:a070ae120e6e33062b57c5",
+      measurementId: "G-YJDPSVZB9C"
     };
 
-    // Captura global de errores para no romper la UI
-    window.addEventListener("error", (e) => {
-      msg.innerHTML = '<span class="err">Error JS: ' + (e?.message || e) + '</span>';
-    });
-    window.addEventListener("unhandledrejection", (e) => {
-      msg.innerHTML = '<span class="err">Error promesa: ' + (e?.reason?.message || e?.reason || e) + '</span>';
-    });
+    // Manejo de errores global
+    window.addEventListener("error",(e)=>{msg.innerHTML='<span class="err">Error JS: '+(e?.message||e)+'</span>'});
+    window.addEventListener("unhandledrejection",(e)=>{msg.innerHTML='<span class="err">Error promesa: '+(e?.reason?.message||e?.reason||e)+'</span>'});
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    const app=initializeApp(firebaseConfig);
+    const db=getFirestore(app);
 
-    // Mostrar a qué proyecto estamos conectados (debug visual)
-    try {
-      const pid = app.options?.projectId || "(desconocido)";
-      projectEl.textContent = `· proyecto: ${pid}`;
-    } catch {}
+    try{
+      const pid=app.options?.projectId||"(desconocido)";
+      projectEl.textContent=`· proyecto: ${pid}`;
+    }catch{}
 
     // Vendor desde la URL — NORMALIZADO
-    const params       = new URLSearchParams(location.search);
-    const vendorMsgRaw = params.get("vendor_msg") || "";
-    const vendorMsg    = vendorMsgRaw.trim().toUpperCase();
+    const params=new URLSearchParams(location.search);
+    const vendorMsgRaw=params.get("vendor_msg")||"";
+    const vendorMsg=vendorMsgRaw.trim().toUpperCase();
 
-    if (!vendorMsg) {
+    if(!vendorMsg){
       setStatus('<span class="warn">Falta <b>vendor_msg</b> en el enlace. Ej: ?vendor_msg=EDGAR</span>');
       hideStatusSoon();
     }
 
     // ===== Enviar =====
-    f.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msg.textContent = "";
+    f.addEventListener("submit",async(e)=>{
+      e.preventDefault(); msg.textContent="";
 
-      if (!vendorMsg) {
-        msg.innerHTML = '<span class="err">Falta el código de vendedor en el enlace (<b>vendor_msg</b>).</span>';
+      if(!vendorMsg){
+        msg.innerHTML='<span class="err">Falta el código de vendedor en el enlace (<b>vendor_msg</b>).</span>';
         return;
       }
 
-      // recolectar productos
-      const recommendedProducts = Array.from(document.querySelectorAll(".prod-row")).map(r => {
-        return {
-          description: r.querySelector(".prod-desc").value.trim(),
-          price: r.querySelector(".prod-price").value ? parseFloat(r.querySelector(".prod-price").value) : null
-        };
-      }).filter(p => p.description);
+      const recommendedProducts = Array.from(document.querySelectorAll(".prod-row")).map(r=>({
+        description:r.querySelector(".prod-desc").value.trim(),
+        price:r.querySelector(".prod-price").value?parseFloat(r.querySelector(".prod-price").value):null
+      })).filter(p=>p.description);
 
-      // recolectar amigos en formato de líneas
-      const friendLines = [];
-      const names  = document.querySelectorAll(".friend-name");
-      const phones = document.querySelectorAll(".friend-phone");
-      for (let i=0;i<names.length;i++){
-        const n = names[i].value.trim();
-        const t = phones[i].value.trim();
-        if (n || t) friendLines.push(`${n}${t ? " - " + t : ""}`);
-      }
+      const friendLines=[]; const names=document.querySelectorAll(".friend-name"); const phones=document.querySelectorAll(".friend-phone");
+      for(let i=0;i<names.length;i++){const n=names[i].value.trim(); const t=phones[i].value.trim(); if(n||t) friendLines.push(`${n}${t?" - "+t:""}`)}
 
-      const nowMs = Date.now();
-
-      // *** GUARDAMOS AMBOS CAMPOS DE VENDOR (compat con la app) ***
-      const data = {
-        vendorVerificationMessage: vendorMsg,   // nuevo (UPPER)
-        vendor_msg: vendorMsg,                  // compat (UPPER)
+      const data={
+        vendorVerificationMessage: vendorMsg,
+        vendor_msg: vendorMsg,
         clientName: document.getElementById("clientName").value.trim(),
         lastName: document.getElementById("lastName").value.trim() || null,
         consultantName: document.getElementById("consultantName").value.trim() || null,
@@ -334,35 +255,28 @@
         birthYear:  parseInt(document.getElementById("bYear").value)  || null,
         otherProducts: null,
         wishMaryKay: "",
-        createdAt: nowMs,              // lo que ya consume tu app
-        createdAtTs: serverTimestamp() // extra: por si luego ordenas en Firestore
+        createdAt: Date.now(),
+        createdAtTs: serverTimestamp()
       };
 
-      if (!data.clientName) {
-        msg.innerHTML = '<span class="err">El nombre es obligatorio.</span>';
+      if(!data.clientName){
+        msg.innerHTML='<span class="err">El nombre es obligatorio.</span>';
         return;
       }
 
-      let timeoutId = setTimeout(()=>{
-        msg.innerHTML = '<span class="warn">Tardando en enviar… (revisa la consola del navegador por errores)</span>';
-      }, 10000);
-
-      try {
-        await addDoc(collection(db, "client_forms"), data);
+      let timeoutId=setTimeout(()=>{msg.innerHTML='<span class="warn">Tardando en enviar… (revisa consola)</span>'},10000);
+      try{
+        await addDoc(collection(db,"client_forms"), data);
         clearTimeout(timeoutId);
-        msg.innerHTML = '<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app…</span>';
-        setTimeout(() => { window.location.href = 'appfactura://forms'; }, 600);
+        msg.innerHTML='<span class="ok">¡Gracias! Tu información fue enviada correctamente. Abriendo la app…</span>';
+        setTimeout(()=>{window.location.href='appfactura://forms'},600);
 
-        // Reset limpio
-        f.reset();
-        document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
-        prods.innerHTML = ''; addProdRow();
-        buildFriends();
+        f.reset(); document.querySelectorAll(".chip.active").forEach(c=>c.classList.remove("active"));
+        prods.innerHTML=''; addProdRow(); buildFriends();
 
-      } catch (err) {
-        clearTimeout(timeoutId);
-        console.error(err);
-        msg.innerHTML = '<span class="err">Error al enviar: ' + (err?.message || err) + '</span>';
+      }catch(err){
+        clearTimeout(timeoutId); console.error(err);
+        msg.innerHTML='<span class="err">Error al enviar: '+(err?.message||err)+'</span>';
       }
     });
   </script>
