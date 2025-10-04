@@ -107,6 +107,17 @@
           <button type="button" id="btnAddProd" class="mini btn" style="margin-top:8px">Añadir producto</button>
         </div>
 
+        <!-- NUEVO: ¿Qué te gustaría de Mary Kay? (multiselección) -->
+        <div class="card">
+          <label>¿Qué te gustaría de Mary Kay?</label>
+          <div class="muted">Puedes elegir una o varias opciones.</div>
+          <div class="chips" id="wishMK">
+            <div data-val="Conocer la oportunidad de negocio" class="chip">Conocer la oportunidad de negocio</div>
+            <div data-val="Ser consultora" class="chip">Ser consultora</div>
+            <div data-val="Ser Cliente" class="chip">Ser Cliente</div>
+          </div>
+        </div>
+
         <div class="card">
           <label>Escribe 10 amig@s que deseas obsequiarle este maravilloso espacio (Sesión de Belleza)</label>
           <div class="muted">Nombre y teléfono por casilla.</div>
@@ -132,6 +143,7 @@
     function setStatus(h){statusEl.innerHTML=h;statusEl.style.display='block'}
     function hideStatusSoon(){setTimeout(()=>statusEl.style.display='none',1800)}
 
+    // Chips de selección única
     function setupChips(id){
       const cont=document.getElementById(id);let value="";
       cont.addEventListener("click",(e)=>{
@@ -144,6 +156,20 @@
     const getAgeRange=setupChips("ageRange");
     const getSkinType=setupChips("skinType");
     const getLineRec=setupChips("lineRecommended");
+
+    // NUEVO: Chips multiselección
+    function setupMultiChips(id){
+      const cont=document.getElementById(id);
+      const selected=new Set();
+      cont.addEventListener("click",(e)=>{
+        const btn=e.target.closest(".chip"); if(!btn) return;
+        const v=btn.dataset.val;
+        if(btn.classList.contains("active")){ btn.classList.remove("active"); selected.delete(v); }
+        else { btn.classList.add("active"); selected.add(v); }
+      });
+      return ()=>Array.from(selected);
+    }
+    const getWishMK=setupMultiChips("wishMK");
 
     function addProdRow(desc="",price=""){
       const row=document.createElement("div");
@@ -177,7 +203,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // CONFIG DEL PROYECTO: appfacturdrivesync-1d991  ✅
     const firebaseConfig = {
       apiKey: "AIzaSyAUQLJZfjCLfEaZwzmO6tkh5HAo-Zd3GrE",
       authDomain: "appfacturadrivesync-1d991.firebaseapp.com",
@@ -188,7 +213,6 @@
       measurementId: "G-YJDPSVZB9C"
     };
 
-    // Manejo de errores global
     window.addEventListener("error",(e)=>{msg.innerHTML='<span class="err">Error JS: '+(e?.message||e)+'</span>'});
     window.addEventListener("unhandledrejection",(e)=>{msg.innerHTML='<span class="err">Error promesa: '+(e?.reason?.message||e?.reason||e)+'</span>'});
 
@@ -200,7 +224,7 @@
       projectEl.textContent=`· proyecto: ${pid}`;
     }catch{}
 
-    // Vendor desde la URL — NORMALIZADO
+    // Vendor desde la URL
     const params=new URLSearchParams(location.search);
     const vendorMsgRaw=params.get("vendor_msg")||"";
     const vendorMsg=vendorMsgRaw.trim().toUpperCase();
@@ -227,6 +251,8 @@
       const friendLines=[]; const names=document.querySelectorAll(".friend-name"); const phones=document.querySelectorAll(".friend-phone");
       for(let i=0;i<names.length;i++){const n=names[i].value.trim(); const t=phones[i].value.trim(); if(n||t) friendLines.push(`${n}${t?" - "+t:""}`)}
 
+      const wish = getWishMK(); // ← NUEVO (array de strings)
+
       const data={
         vendorVerificationMessage: vendorMsg,
         vendor_msg: vendorMsg,
@@ -244,17 +270,15 @@
         skinType: getSkinType() || null,
         lineRecommended: getLineRec() || null,
         baseTone3D: document.getElementById("baseTone3D").value.trim() || "",
-        mattifier: "",
-        idealCombination: "",
         prefersTimeWise: getLineRec()==="TimeWise",
         prefersRepair:  getLineRec()==="Repair",
-        friendsList: friendLines.join("\n") || null,
         recommendedProducts: recommendedProducts.length ? recommendedProducts : null,
+        friendsList: friendLines.join("\n") || null,
+        wishMaryKay: wish.length ? wish : null,   // ← NUEVO: ARRAY
         birthDay:   parseInt(document.getElementById("bDay").value)   || null,
         birthMonth: parseInt(document.getElementById("bMonth").value) || null,
         birthYear:  parseInt(document.getElementById("bYear").value)  || null,
         otherProducts: null,
-        wishMaryKay: "",
         createdAt: Date.now(),
         createdAtTs: serverTimestamp()
       };
